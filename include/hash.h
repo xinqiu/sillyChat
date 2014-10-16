@@ -1,5 +1,5 @@
-#ifndef hash_Header_h
-#define hash_Header_h
+#ifndef __HASH_H__
+#define __HASH_H__
 
 #define hashTableSize 16384
 inline unsigned int hash_pjw(char* name)

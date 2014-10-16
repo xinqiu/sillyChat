@@ -2,32 +2,40 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
-#include "socketHelper.h"
+//#include "hash.h"
+//#include "socketHelper.h"
 /********ContactorTable*********/
 
+inline unsigned int hash_pjw(const char* name)
+{
+    unsigned int val = 0,i;
+    for(; *name; ++name){
+        val = (val << 2) + *name;
+        if(i = val & ~0x3fff)
+            val = (val ^ (i >> 12)) & 0x3fff;
+    }
+    return val;
+}
 
 void initContactorTable()
 {
 	int i;
 	for(i = 0; i < hashTableSize; i++){
 		pthread_mutex_init( &contactorTable[i].lock, NULL );
-		contactorTable[i].addr = NULL;
+		contactorTable[i].addr = -1;
 	}
 }
 
-int contactorReg(char *name, const char *ip)
+int contactorReg(const char *name, const int addr)
 {
 	//get hash value
 	unsigned int val = hash_pjw(name);
 
 	pthread_mutex_lock( &contactorTable[val].lock );
 	//register
-	if( contactorTable[val].addr == NULL ){//check succ
+	if( contactorTable[val].addr == -1 ){//check succ
 		//contactorTable[val] = *(uint32_t *)ip;
-		struct in_addr *tmp = (struct in_addr*) malloc(sizeof(struct in_addr));
-		assert(tmp != NULL); 
-		inet_pton_wrapper(AF_INET, ip, tmp);
-		contactorTable[val].addr = tmp;
+		contactorTable[val].addr = addr;
 		pthread_mutex_unlock( &contactorTable[val].lock );
 		return 1;
 	}
@@ -38,26 +46,26 @@ int contactorReg(char *name, const char *ip)
 
 }
 
-int contactorIsExist(char *name)
+int contactorIsExist(const char *name)
 {
 	unsigned int val = hash_pjw(name);
-	return contactorTable[val].addr == NULL? 0:1;
+	return contactorTable[val].addr;
 }
 
-struct in_addr contactorGetIp(char *name)
+int contactorGetAddr(const char *name)
 {
 	unsigned int val = hash_pjw(name);
-	return *(contactorTable[val].addr);
+	return (contactorTable[val].addr);
 }
 
-void contactorOffline(char *name)
+void contactorOffline(const char *name)
 {
 	unsigned int val = hash_pjw(name);
-	assert( contactorTable[val].addr != NULL );
+	assert( contactorTable[val].addr );
 
 	pthread_mutex_lock( &contactorTable[val].lock );
-	free(contactorTable[val].addr);
-	contactorTable[val].addr = NULL;
+	close(contactorTable[val].addr);
+	contactorTable[val].addr = -1;
 	pthread_mutex_unlock( &contactorTable[val].lock );
 }
 
@@ -65,10 +73,11 @@ void contactorTableDestory()
 {
 	int i;
 	for(i = 0; i < hashTableSize; i++){
-		pthread_mutex_destory( &contactorTable[i].lock );	
+		;//pthread_mutex_destory( &contactorTable[i].lock );	
 	}
 }
 
+/*
 void buffTest()
 {
 
@@ -92,12 +101,12 @@ void buffTest()
 	contactorTableDestory();
 	//return 0;
 }
-
+*/
 
 /*
 int main()
 {
-	buffTest();
+	//buffTest();
 	return 0;
 }
 */

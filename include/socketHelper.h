@@ -1,10 +1,12 @@
-#ifndef socketHelper_Header_h
-#define socketHelper_Header_h
+#ifndef __SOCKETHELPER_H__
+#define __SOCKETHELPER_H__
 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
+//int readn( int fd, char *bp, size_t len);
 
 inline void send_wrapper(int sockfd, void *buf, unsigned int size, int flag)
 {
@@ -18,12 +20,33 @@ inline int socket_wrapper(int af, int type, int protocol)
 {
 	int sockfd;
 	if( (sockfd = socket (af, type, protocol)) < 0 ) {
-		return sockfd;
-	}
-	else{
 		perror("error in create socket");
 		exit(-1);
 	}
+	else{
+		return sockfd;	
+	}
+}
+
+inline int accept_wrapper(int fd, struct sockaddr* addr, socklen_t* len)
+{
+	int sockfd;
+	if( (sockfd = accept (fd, addr, len)) < 0 ) {
+		perror("error in accept");
+		exit(-1);
+	}
+	else{
+		return sockfd;
+	}
+}
+
+inline void recv_wrapper(int fd, void* buf, int len, int flag)
+{
+	int n = -1;
+	if( (n =recv(fd, buf, len, 0)) < 0) {
+		perror("error in recv");
+		exit(-1);  
+	} 
 }
 
 inline void inet_pton_wrapper(int af, const char *src, void *dst)
@@ -36,7 +59,7 @@ inline void inet_pton_wrapper(int af, const char *src, void *dst)
 
 inline void connect_wrapper(int sockfd, struct sockaddr * serv_addr, int addrlen)
 {
-	if ( connect(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) <0 ){
+	if ( connect(sockfd, serv_addr, addrlen) <0 ){
 		perror("error in connect");
 		exit(-1);
 	}
