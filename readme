@@ -1,0 +1,19 @@
+消息：
+	typedef struct 
+	{
+		uint8_t type;	//消息类型
+		char src[32];	//发送方
+		char des[32];	//接受方
+		char data[512];	//内容
+	} MSGBuff;
+	
+	具体有如下几种消息类型
+	#define MSGERROR_REG	0x00	//用户注册
+	#define MSGERROR_NOUSER 0x10	//用户不存在
+	#define MSGOK		0x01	//操作成功
+	#define MSGREG 		0x02	//注册
+	#define MSGOFFLINE	0x03	//下线
+	#define MSGCHAT		0x04	//交流
+	#define MSGCHATALL  0x05	//发送给所有人
+	#define MSGGETALL	0x06	//取所有在线
+	#define MSGEMPTY 	0xFF	//空

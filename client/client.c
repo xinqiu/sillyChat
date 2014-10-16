@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <assert.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "../include/buff.h"
 #include "../include/socketHelper.h"
 
@@ -44,9 +45,13 @@ void* client_do_recvMsg(void *argv)
 		MSGBuff msg;
 		recv_wrapper(fd, (void*)&msg, sizeof(MSGBuff), 0);
 		switch(msg.type){
+			case MSGCHATALL:
 			case MSGCHAT : {
-				assert(strcmp(username, msg.des) == 0);
 				printf("from %s\n%s\n", msg.src, msg.data);
+				break;
+			}
+			case MSGGETALL	:{
+				printf("%s\n", msg.data);
 				break;
 			}
 
@@ -67,11 +72,45 @@ void* client_do_sendMsg(void *argv)
 	int fd = *(int *)argv;
 	while(1)
 	{
-		MSGBuff msg = {MSGCHAT};
-		strcpy(msg.src, username);
-		scanf("%s", msg.des);
-		scanf("%s", msg.data);
-		send_wrapper(fd, &msg, sizeof(MSGBuff), 0);
+		printf("(a):talk to all users\n");
+		printf("(s):talk to single user\n");
+		printf("(g):get all users\n");
+		printf("(e):exit\n");
+		char type[2];
+		scanf("%s",type);
+
+		if(strcmp(type, "s") == 0){
+			MSGBuff msg = {MSGCHAT};
+			strcpy(msg.src, username);
+			scanf("%s", msg.des);
+			scanf("%s", msg.data);
+			send_wrapper(fd, &msg, sizeof(MSGBuff), 0);
+		}
+
+		else if(strcmp(type, "a") == 0){
+			MSGBuff msg = {MSGCHATALL};
+			strcpy(msg.src, username);
+			//scanf("%s", msg.des);
+			scanf("%s", msg.data);
+			send_wrapper(fd, &msg, sizeof(MSGBuff), 0);
+		}
+
+		else if(strcmp(type, "g") == 0){
+			MSGBuff msg = {MSGGETALL};
+			strcpy(msg.src, username);
+			send_wrapper(fd, &msg, sizeof(MSGBuff), 0);
+		}
+		else if(strcmp(type, "e") == 0){
+			MSGBuff msg = {MSGOFFLINE};
+			strcpy(msg.src, username);
+			send_wrapper(fd, &msg, sizeof(MSGBuff), 0);
+			pthread_exit(0);
+		}
+
+		else{
+			printf("error in client send type is %s\n",type);
+		}
+		sleep(1);
 	}
 }
 

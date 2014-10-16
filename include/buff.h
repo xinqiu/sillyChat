@@ -11,10 +11,7 @@
 struct _contactorNode
 {
 	pthread_mutex_t lock;
-	//struct in_addr *addr;
 	int addr;
-	//struct _contactorNode(): lock(PTHREAD_MUTEX_INITIALIZER), addr(NULL) {};
-	//struct contactorNode() : lock(PTHREAD_MUTEX_INITIALIZER), addr(NULL) {};
 };
 typedef struct _contactorNode contactorNode;
 contactorNode contactorTable[hashTableSize];
@@ -37,6 +34,8 @@ void buffTest();
 #define MSGREG 		0x02	//注册
 #define MSGOFFLINE	0x03	//下线
 #define MSGCHAT		0x04	//交流
+#define MSGCHATALL  0x05	//发送给所有人
+#define MSGGETALL	0x06	//取所有在线
 #define MSGEMPTY 	0xFF	//空
 typedef struct 
 {

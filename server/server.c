@@ -12,8 +12,37 @@
 #define SERV_IP "192.168.1.1"
 #define SERV_PORT 6666 /*port*/
 #define LISTENQ 8
-
 #define printfFuncName()	do { printf("in %s\n", __FUNCTION__); } while(0)
+
+typedef struct _userNode{
+	char username[32];
+	struct _userNode *next;
+}userNode;
+
+userNode *userListHead;
+
+void addNewUserToList(const char *username)
+{
+	userNode *newUser = (userNode *)malloc(sizeof(userNode));
+	strcpy(newUser->username, username);
+
+	newUser->next = userListHead->next;
+	userListHead->next = newUser;
+}
+
+void delUserFromList(const char *username)
+{
+	userNode *ptr = userListHead;
+	while( ptr->next != NULL ){
+		userNode *tmp = ptr->next;
+		if( strcmp(tmp->username, username) == 0 ){
+			ptr->next = tmp->next;
+			free(tmp);
+			return;
+		}
+		ptr = ptr->next;
+	}
+}
 
 inline void serv_do_response_error(const int sockfd, uint8_t errorType, MSGBuff sendMsg)
 {
@@ -34,6 +63,7 @@ int serv_do_register(const int fd, const MSGBuff msg)
 	//printfFuncName();
 	if( contactorReg(msg.src, fd) ){
 		serv_do_response_OK(fd);
+		addNewUserToList(msg.src);
 		return 1;
 	}
 	else{
@@ -47,7 +77,20 @@ inline void serv_do_offline(const char *username)
 	//printfFuncName();
 	assert( contactorIsExist(username) );
 	contactorOffline(username);
+	delUserFromList(username);
 	printf("user: %s offline\n", username);
+}
+
+void serv_do_retrieveAllUsers(int fd)
+{
+	userNode *ptr = userListHead->next;
+	while( ptr != NULL ){
+		MSGBuff msg = {MSGGETALL};
+		strcpy(msg.data, ptr->username);
+		send_wrapper(fd, (void *)&msg, sizeof(msg), 0);
+
+		ptr = ptr->next;
+	}	
 }
 
 void serv_do_chat(const MSGBuff msg)
@@ -60,6 +103,19 @@ void serv_do_chat(const MSGBuff msg)
 	}
 	else{
 		send_wrapper(fd, (void *)&msg, sizeof(msg), 0);
+	}
+}
+
+void serv_do_broadcast(MSGBuff msg)
+{
+	userNode *ptr = userListHead->next;
+	while( ptr != NULL ){
+		if(strcmp(msg.src, ptr->username) == 0)
+			continue;
+		strcpy(msg.des, ptr->username);
+		serv_do_chat(msg);
+
+		ptr = ptr->next;
 	}
 }
 
@@ -87,6 +143,8 @@ void *do_task(void* connfd)
 			}
 
 			case MSGCHAT:	serv_do_chat(msg); break;
+			case MSGCHATALL: serv_do_broadcast(msg); break;
+			case MSGGETALL: serv_do_retrieveAllUsers(fd); break;
 			case MSGEMPTY:
 			case MSGOFFLINE: if(authFlag) serv_do_offline(username); break;
 			default:	printf("error in do task switch type is %d\n", msg.type); exit(-1);
@@ -126,6 +184,9 @@ int main(int argc, char **argv)
 
 	//listen to the socket by creating a connection
 	//queue, then wait for clients
+	
+	userListHead = (userNode *)malloc(sizeof(userNode));
+	userListHead->next = NULL;
 	initContactorTable();
 	listen(listenfd, LISTENQ);
 	
