@@ -109,13 +109,16 @@ void serv_do_chat(const MSGBuff msg)
 void serv_do_broadcast(MSGBuff msg)
 {
 	userNode *ptr = userListHead->next;
+	printf("in serv_do_broadcast %s\n",msg.src);
 	while( ptr != NULL ){
-		if(strcmp(msg.src, ptr->username) == 0)
+		if(strcmp(msg.src, ptr->username) == 0){
+			ptr = ptr->next;
 			continue;
+		}
 		strcpy(msg.des, ptr->username);
 		serv_do_chat(msg);
-
 		ptr = ptr->next;
+		
 	}
 }
 
